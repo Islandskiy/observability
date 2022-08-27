@@ -9,3 +9,10 @@
 3. Navigate to Configuration -> "Data sources" and add Loki data source. Specify just the Loki URL (http://loki:3100)
 4. Start the app and make a request
 5. Log messages should become visible in "Explore" tab in Grafana
+
+
+## Scenario 1: view host metrics
+
+1. Install [Prometheus Node Exporter](https://prometheus.io/docs/guides/node-exporter/) on target machine. 
+   **Caution: For demo purposes we setup the exporter in docker container with host system access**
+2. 
