@@ -6,15 +6,19 @@ networks:
 services:
   loki:
     image: grafana/loki:latest
+    container_name: loki
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+      - ./var/loki:/loki
+    command: -config.file=/etc/loki/config.yaml
     networks:
       - observability
 
   promtail:
     image: grafana/promtail:latest
+    container_name: promtail
     ports:
       - "9080:9080"
     volumes:
@@ -25,6 +29,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    container_name: grafana
     ports:
       - "3000:3000"
     volumes:
@@ -34,6 +39,7 @@ services:
   
   jaeger:
     image: jaegertracing/all-in-one:1.37
+    container_name: jaeger
     ports:
       - "6831:6831/udp"
       - "6832:6832/udp"
