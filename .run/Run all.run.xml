@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run all" type="CompoundRunConfigurationType">
+    <toRun name="Observability.API: Kestrel" type="LaunchSettings" />
+    <toRun name="Observability.Service.A: Kestrel" type="LaunchSettings" />
+    <method v="2" />
+  </configuration>
+</component>

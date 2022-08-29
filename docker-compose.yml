@@ -1,32 +1,103 @@
 version: "3"
 
 networks:
-  loki:
+  observability:
 
 services:
   loki:
     image: grafana/loki:latest
+    container_name: loki
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+      - ./var/loki:/loki
+    command: -config.file=/etc/loki/config.yaml
     networks:
-      - loki
+      - observability
 
   promtail:
     image: grafana/promtail:latest
+    container_name: promtail
     ports:
       - "9080:9080"
-    #volumes:
-    #  - ./var/log:/var/log:ro
+    volumes:
+      - ./var/promtail:/var/log
     command: -config.file=/etc/promtail/config.yml -log.level=debug
     networks:
-      - loki
+      - observability
 
   grafana:
     image: grafana/grafana:latest
+    container_name: grafana
     ports:
       - "3000:3000"
     volumes:
-      - ./var/grafana:/var/lib/grafana    
+      - ./var/grafana:/var/lib/grafana
     networks:
-      - loki
+      - observability
+  
+  jaeger:
+    image: jaegertracing/all-in-one:1.37
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "9411:9411"
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    volumes:
+      - ./var/jaeger/cassandra:/var/lib/cassandra
+      - ./var/jaeger/elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - observability
+  
+  # Host metrics exporter
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    expose:
+      - 9100
+    ports:
+      - "9100:9100"
+    networks:
+      - observability
+  
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./var/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+    ports:
+      - "9090:9090"
+    networks:
+      - observability
