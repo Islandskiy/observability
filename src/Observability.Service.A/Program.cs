@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Observability.Service.A.Domain;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
@@ -25,10 +27,23 @@ builder.Services.AddOpenTelemetryTracing(tracerProviderBuilder =>
                 .AddService(serviceName: serviceName, serviceVersion: serviceVersion))
         .AddHttpClientInstrumentation()
         .AddAspNetCoreInstrumentation()
-        .AddSqlClientInstrumentation();
+        .AddSqlClientInstrumentation(options =>
+        {
+            options.SetDbStatementForText = true;
+        });
+    // .AddEntityFrameworkCoreInstrumentation(options =>
+    // {
+    //     options.SetDbStatementForText = true;
+    // });
 });
 
 // Add services to the container.
+
+// Register EF Core
+builder.Services.AddDbContext<DataContext>(options =>
+{
+    options.UseSqlServer();
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -50,4 +65,12 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+// Migrate database to latest schema version
+var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+using(var scope = scopeFactory.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<DataContext>().Database.MigrateAsync();
+}
+    
+// Run the app
+await app.RunAsync();

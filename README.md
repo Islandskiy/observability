@@ -41,5 +41,18 @@ As a base point of host metrics dashboard import the [Node Exporter Full dashboa
 
 ![Demo dashboard](./docs/host-metrics-dashboard.png)
 
+## Scenario: trace apps communication (including SQL queries)
+This scenario requires the following tool set:
+- Jaeger as a trace store and UI (runs in docker)
+- OpenTelemetry nuget packages to hook on ASP.NET Core/SQL request handling events and send trace spans to Jaeger
+
+#### Tracing demo
+1. Make GET request to https://localhost:7248/trace to trigger sending trace data
+2. Open Jaeger UI on http://localhost:16686/search
+3. Select the service 'Observability.API', then select the operation '/trace' (which was done in step 1) and click on 'Find Traces'. You will see the result similar to the depicted below:
+![Tracing search](./docs/tracing-1.png)
+5. Click on trace to see details including SQL query:
+![Trace details](./docs/tracing-2.png)
+
 ### Sources
 - https://grafana.com/docs/grafana-cloud/quickstart/docker-compose-linux/

@@ -101,3 +101,19 @@ services:
       - "9090:9090"
     networks:
       - observability
+  
+  # Azure SQL Edge
+  sql:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sql
+    environment:
+      SA_PASSWORD: "passwd1q2w3e4R"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./var/sql/data:/var/opt/mssql/data
+      - ./var/sql/log:/var/opt/mssql/log
+      - ./var/sql/secrets:/var/opt/mssql/secrets
+    networks:
+      - observability
