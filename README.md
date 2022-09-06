@@ -54,5 +54,10 @@ This scenario requires the following tool set:
 5. Click on trace to see details including SQL query:
 ![Trace details](./docs/tracing-2.png)
 
+## Scenario: catch app errors in Sentry
+TBD
+
+## 
+
 ### Sources
 - https://grafana.com/docs/grafana-cloud/quickstart/docker-compose-linux/
