@@ -59,5 +59,36 @@ TBD
 
 ## 
 
+## Expose metrics with OpenTelemetry, Prometheus and Grafana
+1. Install OpenTelemetry metrics Nuget package along with required instrumentation libraries and Prometheus exporter:
+```shell
+dotnet add package OpenTelemetry.Extensions.Hosting --prerelease
+dotnet add package OpenTelemetry.Exporter.Prometheus.AspNetCore --prerelease 
+dotnet add package OpenTelemetry.Instrumentation.Runtime --prerelease 
+```
+2. Register OpenTelemetry metrics services:
+```csharp
+builder.Services.AddOpenTelemetryMetrics(meterProviderBuilder =>
+                                         {
+                                             // Allow export metrics from the specified meter
+                                             meterProviderBuilder.AddMeter("MyApp");
+                                             // Appends ASP.NET Core specific metrics (http_server_duration_ms)
+                                             meterProviderBuilder.AddAspNetCoreInstrumentation();
+                                             // Appends .NET runtime metrics (GC allocation, threads count, ...)
+                                             meterProviderBuilder.AddRuntimeInstrumentation();
+                                             // Allow export metrics in Prometheus style (pull approach via /metrics endpoint) 
+                                             meterProviderBuilder.AddPrometheusExporter();
+                                         });
+```
+3. Add Prometheus exporter middleware to the pipeline:
+```csharp
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
+```
+This exposes **/metrics** endpoint
+4. Create custom metrics if needed. See counter example in **MetricsDemoController** or histogram in **RequestDurationMiddleware**
+5. Start the Observability.API project
+6. Make a request to **/metrics-demo/counter** with custom counter metric example
+7. Navigate to **/metrics** endpoint to see current app metrics
+
 ### Sources
 - https://grafana.com/docs/grafana-cloud/quickstart/docker-compose-linux/

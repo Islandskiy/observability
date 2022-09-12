@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.Metrics;
+using System.Reflection;
 using Observability.API;
+using Observability.API.Middlewares;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
-using Serilog.Sinks.Grafana.Loki;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +31,7 @@ builder.WebHost
                   });
 
 // Configure important OpenTelemetry settings, the console exporter, and instrumentation library
-const string serviceName = "Observability.Api";
-const string serviceVersion = "1.0.0";
+var serviceName = Assembly.GetExecutingAssembly().GetName().Name!;
 builder.Services.AddOpenTelemetryTracing(tracerProviderBuilder =>
                                          {
                                              tracerProviderBuilder.AddJaegerExporter()
@@ -38,20 +39,43 @@ builder.Services.AddOpenTelemetryTracing(tracerProviderBuilder =>
                                                                   .AddSource(serviceName)
                                                                   .SetResourceBuilder(
                                                                                       ResourceBuilder.CreateDefault()
-                                                                                                     .AddService(serviceName: serviceName,
-                                                                                                         serviceVersion: serviceVersion))
+                                                                                                     .AddService(serviceName: serviceName)
+                                                                                                     .AddEnvironmentVariableDetector())
                                                                   .AddHttpClientInstrumentation()
                                                                   .AddAspNetCoreInstrumentation()
                                                                   .AddSqlClientInstrumentation();
                                          });
+
+// Configure OpenTelemetry metrics
+builder.Services.AddOpenTelemetryMetrics(meterProviderBuilder =>
+                                         {
+                                             // Allow export metrics from the specified meter
+                                             meterProviderBuilder.AddMeter(serviceName);
+                                             // Appends ASP.NET Core specific metrics (http_server_duration_ms)
+                                             meterProviderBuilder.AddAspNetCoreInstrumentation();
+                                             // Appends .NET runtime metrics (GC allocation, threads count, ...)
+                                             meterProviderBuilder.AddRuntimeInstrumentation();
+                                             // Allow export metrics in Prometheus style (pull approach via /metrics endpoint) 
+                                             meterProviderBuilder.AddPrometheusExporter();
+                                         });
+// Register Meter instance as singleton according to best practices (https://docs.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation#best-practices)
+builder.Services.AddSingleton(new Meter(serviceName));
 
 builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
 builder.Services.AddHttpClient<ServiceAClient>();
 builder.Services.AddScoped<ServiceAClient>();
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<RequestDurationMiddleware>();
 
+// Configure middleware workflow
 var app = builder.Build();
+
+// Add OpenTelemetry Prometheus scraping endpoint
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
+
+// Metrics Histogram demo - request duration middleware
+app.UseMiddleware<RequestDurationMiddleware>();
 
 app.MapControllers();
 

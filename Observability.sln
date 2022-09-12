@@ -7,7 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		docker-compose.yml = docker-compose.yml
 		README.md = README.md
 		prometheus.yml = prometheus.yml
-		demo.pptx = demo.pptx
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Observability.Service.A", "src\Observability.Service.A\Observability.Service.A.csproj", "{3A4C4CB0-A091-4C54-BAC3-D7FD5402ADF5}"
