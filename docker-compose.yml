@@ -34,7 +34,7 @@ services:
       - "3000:3000"
     volumes:
       - ./var/grafana:/var/lib/grafana
-      # - ${PWD}/grafana.ini:/etc/grafana/grafana.ini
+#     - ./grafana.ini:/etc/grafana/grafana.ini
     networks:
       - observability
   
